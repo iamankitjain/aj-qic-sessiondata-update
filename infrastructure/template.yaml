@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Amazon Connect Q Connect Session Data Updater Lambda Function'
+
+Parameters:
+  ConnectInstanceId:
+    Type: String
+    Description: Amazon Connect Instance ID
+    
+  AiAssistantId:
+    Type: String
+    Description: Q Connect AI Assistant ID
+    
+  LambdaFunctionName:
+    Type: String
+    Default: connect-qic-session-data-updater
+    Description: Name for the Lambda function
+    
+
+Resources:
+  # IAM Role for Lambda function
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: QConnectSessionUpdatePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - qconnect:UpdateSessionData
+                Resource: !Sub 'arn:aws:qconnect:${AWS::Region}:${AWS::AccountId}:assistant/${AiAssistantId}/*'
+              - Effect: Allow
+                Action:
+                  - connect:DescribeContact
+                Resource: !Sub 'arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${ConnectInstanceId}/contact/*'
+
+  # CloudWatch Log Group
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${LambdaFunctionName}'
+
+  # Lambda Function
+  QConnectSessionUpdaterFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaFunctionName
+      Runtime: python3.11
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          # Placeholder code - replace with actual deployment package
+          def lambda_handler(event, context):
+              return {'statusCode': 200, 'body': 'Function not deployed yet'}
+      Environment:
+        Variables:
+          CONNECT_INSTANCE_ID: !Ref ConnectInstanceId
+          AI_ASSISTANT_ID: !Ref AiAssistantId
+      Timeout: 30
+      MemorySize: 128
+      Description: 'Updates Q Connect session with data from Amazon Connect contact flow'
+      Tags:
+        - Key: Application
+          Value: AmazonConnect
+        - Key: Component
+          Value: QConnectIntegration
+
+  # Lambda Permission for Connect to invoke the function
+  ConnectInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref QConnectSessionUpdaterFunction
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub 'arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${ConnectInstanceId}/*'
+
+Outputs:
+  LambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt QConnectSessionUpdaterFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaArn'
+      
+  LambdaFunctionName:
+    Description: Name of the Lambda function
+    Value: !Ref QConnectSessionUpdaterFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaName'
+      
+  LambdaExecutionRoleArn:
+    Description: ARN of the Lambda execution role
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ExecutionRoleArn'

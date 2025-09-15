@@ -1,0 +1,1 @@
+# Test package for Amazon Connect Q Connect Session Data Updater

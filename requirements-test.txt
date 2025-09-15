@@ -1,0 +1,12 @@
+# Test dependencies for Amazon Connect Q Connect Session Data Updater
+# Install with: pip install -r requirements-test.txt
+
+# Core testing framework
+pytest>=6.0.0,<8.0.0
+pytest-cov>=3.0.0,<5.0.0
+
+# Coverage reporting
+coverage>=6.0.0,<8.0.0
+
+# AWS SDK (same as main requirements)
+boto3>=1.26.0
